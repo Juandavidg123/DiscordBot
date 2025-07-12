@@ -3,6 +3,7 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 import asyncio
+import webserver
 
 load_dotenv()
 
@@ -26,4 +27,5 @@ async def main():
     await bot.start(os.getenv("DISCORD_TOKEN"))
 
 if __name__ == "__main__":
+    webserver.keep_alive()
     asyncio.run(main())
