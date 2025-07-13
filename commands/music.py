@@ -13,7 +13,7 @@ async def setup(bot):
             'quiet': True,
             'default_search': 'ytsearch',
             'noplaylist': False,
-            'cookiefile': '/etc/secrets/cookies.txt', # Ruta productivo al archivo de cookies
+            'cookiefile': '/etc/secrets/cookiesYT.txt', # Ruta productivo al archivo de cookies
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0 Safari/537.36'
             }
