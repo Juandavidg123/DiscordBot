@@ -12,3 +12,6 @@ env/
 *.sublime-workspace
 .vscode/
 *.vscode/
+
+#Cookies
+cookiesYT.txt
