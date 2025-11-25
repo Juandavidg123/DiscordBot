@@ -1,30 +1,51 @@
 import os
+import logging
 import discord
 from discord.ext import commands
-from dotenv import load_dotenv
 import asyncio
 import webserver
+from config import Config
 
-load_dotenv()
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
+
+logger = logging.getLogger(__name__)
 
 intents = discord.Intents.default()
 intents.message_content = True
-bot = commands.Bot(command_prefix="pana", intents=intents)
+bot = commands.Bot(command_prefix=Config.COMMAND_PREFIX, intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f"✅ Bot conectado como {bot.user}")
+    logger.info(f"✅ Bot conectado como {bot.user}")
+
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandNotFound):
+        await ctx.send("❌ Comando no encontrado. Usa `panaHelp` para ver comandos disponibles.")
+    elif isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send(f"❌ Falta un argumento: {error.param.name}")
+    elif isinstance(error, commands.BadArgument):
+        await ctx.send(f"❌ Argumento inválido: {str(error)}")
+    else:
+        logger.error(f"Error en comando: {error}", exc_info=True)
+        await ctx.send(f"❌ Ocurrió un error: {str(error)}")
 
 async def main():
     for filename in os.listdir('./commands'):
         if filename.endswith('.py') and filename != '__init__.py':
             try:
                 await bot.load_extension(f'commands.{filename[:-3]}')
-                print(f"✅ Comando cargado: {filename}")
+                logger.info(f"✅ Comando cargado: {filename}")
             except Exception as e:
-                print(f"❌ Error al cargar {filename}: {e}")
+                logger.error(f"❌ Error al cargar {filename}: {e}", exc_info=True)
 
-    await bot.start(os.getenv("DISCORD_TOKEN"))
+    await bot.start(Config.DISCORD_TOKEN)
 
 if __name__ == "__main__":
     webserver.keep_alive()

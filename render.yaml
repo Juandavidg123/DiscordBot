@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: discord-bot-pana
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: |
+      pip install -r requirements.txt
+      apt-get update && apt-get install -y ffmpeg
+    startCommand: python bot.py
+    envVars:
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: HF_TOKEN
+        sync: false
+      - key: COOKIES_FILE
+        value: /etc/secrets/cookiesYT.txt
+      - key: PYTHON_VERSION
+        value: 3.11.0

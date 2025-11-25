@@ -1,17 +1,45 @@
-#Cache
+# Cache
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 
-#Virtual Environment
+# Virtual Environment
 venv/
 env/
-.env
+ENV/
+.venv
 
-#IDE specific files
+# Environment variables
+.env
+.env.local
+.env.production
+
+# IDE specific files
 .idea/
 *.sublime-workspace
 .vscode/
 *.vscode/
+*.swp
+*.swo
+*~
 
-#Cookies
+# Logs
+*.log
+logs/
+
+# Cookies and secrets
 cookiesYT.txt
+cookies*.txt
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Build files
+dist/
+build/
+*.egg-info/
+
+# Claude
+.claude

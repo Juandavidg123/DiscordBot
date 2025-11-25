@@ -1,19 +1,25 @@
+import logging
 import discord
 from discord.ext import commands
 from huggingface_hub import InferenceClient
 from PIL import Image
-import os
 import io
+from config import Config
+
+logger = logging.getLogger(__name__)
 
 async def setup(bot):
-    HF_TOKEN = os.getenv("HF_TOKEN") 
-    client = InferenceClient(token=HF_TOKEN)
+    if not Config.HF_TOKEN:
+        logger.warning("HF_TOKEN not configured, ImageIA command will not work")
+        return
+
+    client = InferenceClient(token=Config.HF_TOKEN)
 
     @bot.command()
     async def ImageIA(ctx, *, prompt: str):
-        await ctx.send(f"🎨 Generando imagen para: `{prompt}`... Esto puede tardar unos segundos.")
-
         try:
+            await ctx.send(f"🎨 Generando imagen para: `{prompt}`... Esto puede tardar unos segundos.")
+
             image: Image.Image = client.text_to_image(
                 prompt,
                 model="stabilityai/stable-diffusion-xl-base-1.0",
@@ -28,4 +34,5 @@ async def setup(bot):
             await ctx.send(file=discord.File(buffer, filename="generated.png"))
 
         except Exception as e:
+            logger.error(f"Error in ImageIA command: {e}", exc_info=True)
             await ctx.send(f"❌ Error generando imagen: {str(e)}")

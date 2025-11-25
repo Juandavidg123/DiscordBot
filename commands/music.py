@@ -1,23 +1,34 @@
 import os
+import logging
 from discord.ext import commands
 from discord import FFmpegPCMAudio, PCMVolumeTransformer
 import yt_dlp
+from config import Config
 
+logger = logging.getLogger(__name__)
 queueSongs = []
 
 async def setup(bot):
     @bot.command()
     async def Play(ctx, *, query: str):
+        cookies_path = Config.COOKIES_FILE
+
+        if not os.path.exists(cookies_path):
+            logger.warning(f"Cookies file not found at {cookies_path}, attempting without cookies")
+            cookies_path = None
+
         ydl_opts = {
             'format': 'bestaudio/best',
             'quiet': True,
             'default_search': 'ytsearch',
             'noplaylist': False,
-            'cookiefile': 'etc/secrets/cookiesYT.txt', # Ruta productivo al archivo de cookies
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0 Safari/537.36'
             }
         }
+
+        if cookies_path:
+            ydl_opts['cookiefile'] = cookies_path
 
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -48,6 +59,7 @@ async def setup(bot):
                 await ctx.send(f"▶️ Reproduciendo: {title}")
 
         except Exception as e:
+            logger.error(f"Error playing music: {e}", exc_info=True)
             await ctx.send(f"❌ Error: {str(e)}")
 
     async def play_next(ctx, bot):
