@@ -2,6 +2,7 @@ import logging
 import aiohttp
 from config import Config
 
+import aiohttp
 logger = logging.getLogger(__name__)
 
 async def data(prompt):
