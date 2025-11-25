@@ -23,6 +23,9 @@ bot = commands.Bot(command_prefix=Config.COMMAND_PREFIX, intents=intents)
 @bot.event
 async def on_ready():
     logger.info(f"✅ Bot conectado como {bot.user}")
+    logger.info(f"Total de comandos registrados: {len(bot.commands)}")
+    for cmd in bot.commands:
+        logger.info(f"  - {cmd.name}")
 
 @bot.event
 async def on_command_error(ctx, error):
@@ -37,13 +40,17 @@ async def on_command_error(ctx, error):
         await ctx.send(f"❌ Ocurrió un error: {str(error)}")
 
 async def main():
+    extensions_loaded = set()
     for filename in os.listdir('./commands'):
         if filename.endswith('.py') and filename != '__init__.py':
-            try:
-                await bot.load_extension(f'commands.{filename[:-3]}')
-                logger.info(f"✅ Comando cargado: {filename}")
-            except Exception as e:
-                logger.error(f"❌ Error al cargar {filename}: {e}", exc_info=True)
+            extension_name = f'commands.{filename[:-3]}'
+            if extension_name not in extensions_loaded:
+                try:
+                    await bot.load_extension(extension_name)
+                    extensions_loaded.add(extension_name)
+                    logger.info(f"✅ Comando cargado: {filename}")
+                except Exception as e:
+                    logger.error(f"❌ Error al cargar {filename}: {e}", exc_info=True)
 
     await bot.start(Config.DISCORD_TOKEN)
 
