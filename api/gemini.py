@@ -2,7 +2,6 @@ import logging
 import aiohttp
 from config import Config
 
-import aiohttp
 logger = logging.getLogger(__name__)
 
 async def data(prompt):
@@ -10,7 +9,7 @@ async def data(prompt):
         logger.error("GEMINI_API_KEY not configured")
         return "Error: Gemini API key no configurada"
 
-    endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={Config.GEMINI_API_KEY}"
+    endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={Config.GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
     payload = {
         "contents": [
@@ -31,6 +30,9 @@ async def data(prompt):
                     respuesta = await response.json()
                     texto = respuesta["candidates"][0]["content"]["parts"][0]["text"]
                     return texto
+                elif response.status == 429:
+                    logger.warning("Gemini API rate limit exceeded")
+                    return "⏳ Límite de uso de la API alcanzado. Intenta de nuevo en unos segundos."
                 else:
                     error_text = await response.text()
                     logger.error(f"Gemini API error {response.status}: {error_text}")
