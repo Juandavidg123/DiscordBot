@@ -22,13 +22,25 @@ def get_cookies_file():
         # Decode Base64 and write to temporary file
         try:
             cookies_content = base64.b64decode(cookies_base64).decode('utf-8')
-            temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt')
+
+            # Validate cookies content
+            if not cookies_content.strip():
+                logger.error("Decoded cookies file is empty")
+                return None
+
+            if '# Netscape HTTP Cookie File' not in cookies_content and '.youtube.com' not in cookies_content:
+                logger.error("Cookies file doesn't appear to be valid YouTube cookies")
+                logger.debug(f"Cookies preview: {cookies_content[:200]}")
+                return None
+
+            temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt', encoding='utf-8')
             temp_file.write(cookies_content)
             temp_file.close()
             logger.info(f"Created cookies file from Base64 env var at: {temp_file.name}")
+            logger.info(f"Cookies file size: {len(cookies_content)} bytes")
             return temp_file.name
         except Exception as e:
-            logger.error(f"Failed to decode Base64 cookies: {e}")
+            logger.error(f"Failed to decode Base64 cookies: {e}", exc_info=True)
             return None
 
     # Fallback to local file
@@ -47,31 +59,17 @@ async def setup(bot):
         cookies_path = get_cookies_file()
 
         ydl_opts = {
-            'format': 'bestaudio*',  # Accept any best audio format
-            'quiet': True,
-            'no_warnings': True,
+            'format': 'bestaudio/best',
+            'quiet': False,  # Enable output for debugging
+            'no_warnings': False,
             'default_search': 'ytsearch',
             'noplaylist': False,
             'extract_flat': False,
-            'source_address': '0.0.0.0',
             'nocheckcertificate': True,
             'geo_bypass': True,
-            'prefer_free_formats': True,
-            'youtube_include_dash_manifest': False,
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'best',
-            }],
-            'http_headers': {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'en-us,en;q=0.5',
-                'Sec-Fetch-Mode': 'navigate'
-            },
             'extractor_args': {
                 'youtube': {
-                    'player_client': ['web_embedded', 'web'],
-                    'player_skip': ['webpage', 'configs']
+                    'player_client': ['android', 'web'],
                 }
             },
         }
