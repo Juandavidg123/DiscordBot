@@ -59,19 +59,15 @@ async def setup(bot):
         cookies_path = get_cookies_file()
 
         ydl_opts = {
-            'format': 'bestaudio/best',
-            'quiet': False,  # Enable output for debugging
-            'no_warnings': False,
+            'format': 'bestaudio/best',  # Works with m3u8 formats from iOS client
+            'quiet': True,
+            'no_warnings': True,
             'default_search': 'ytsearch',
             'noplaylist': False,
             'extract_flat': False,
             'nocheckcertificate': True,
             'geo_bypass': True,
-            'extractor_args': {
-                'youtube': {
-                    'player_client': ['android', 'web'],
-                }
-            },
+            # Note: extractor_args removed as they prevent format selection
         }
 
         # Use cookie file if it exists (required for server deployment)
