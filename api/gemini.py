@@ -9,7 +9,7 @@ async def data(prompt):
         logger.error("GEMINI_API_KEY not configured")
         return "Error: Gemini API key no configurada"
 
-    endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key={Config.GEMINI_API_KEY}"
+    endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key={Config.GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
     payload = {
         "contents": [
