@@ -1,5 +1,7 @@
 import os
 import logging
+import base64
+import tempfile
 from discord.ext import commands
 from discord import FFmpegPCMAudio, PCMVolumeTransformer
 import yt_dlp
@@ -8,17 +10,41 @@ from config import Config
 logger = logging.getLogger(__name__)
 queueSongs = []
 
-# Explicitly set FFmpeg path
-FFMPEG_PATH = "C:/ffmpeg/bin/ffmpeg.exe"
+# Explicitly set FFmpeg path (for local development)
+FFMPEG_PATH = "C:/ffmpeg/bin/ffmpeg.exe" if os.path.exists("C:/ffmpeg/bin/ffmpeg.exe") else "ffmpeg"
+
+# Handle cookies from Base64 environment variable (for Render deployment)
+def get_cookies_file():
+    """Get cookies file path, creating it from Base64 env var if needed"""
+    cookies_base64 = os.getenv("YOUTUBE_COOKIES_BASE64")
+
+    if cookies_base64:
+        # Decode Base64 and write to temporary file
+        try:
+            cookies_content = base64.b64decode(cookies_base64).decode('utf-8')
+            temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt')
+            temp_file.write(cookies_content)
+            temp_file.close()
+            logger.info(f"Created cookies file from Base64 env var at: {temp_file.name}")
+            return temp_file.name
+        except Exception as e:
+            logger.error(f"Failed to decode Base64 cookies: {e}")
+            return None
+
+    # Fallback to local file
+    cookies_path = Config.COOKIES_FILE
+    if os.path.exists(cookies_path):
+        logger.info(f"Using local cookies file: {cookies_path}")
+        return cookies_path
+
+    logger.warning("No cookies file found")
+    return None
 
 async def setup(bot):
     @bot.command()
     async def Play(ctx, *, query: str):
-        cookies_path = Config.COOKIES_FILE
-
-        if not os.path.exists(cookies_path):
-            logger.warning(f"Cookies file not found at {cookies_path}, attempting without cookies")
-            cookies_path = None
+        # Get cookies file (from Base64 env var or local file)
+        cookies_path = get_cookies_file()
 
         ydl_opts = {
             'format': 'bestaudio/best',
