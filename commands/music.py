@@ -47,13 +47,15 @@ async def setup(bot):
         cookies_path = get_cookies_file()
 
         ydl_opts = {
-            'format': 'bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best',
+            'format': 'ba/b',  # Simplified format selector: best audio or best overall
             'quiet': True,
+            'no_warnings': True,
             'default_search': 'ytsearch',
             'noplaylist': False,
             'extract_flat': False,
-            'no_warnings': True,
-            'ignoreerrors': False,
+            'source_address': '0.0.0.0',
+            'force_generic_extractor': False,
+            'nocheckcertificate': True,
             'geo_bypass': True,
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
@@ -63,13 +65,10 @@ async def setup(bot):
             },
             'extractor_args': {
                 'youtube': {
-                    'player_client': ['android', 'web', 'ios'],
-                    'player_skip': ['configs'],
-                    'skip': ['hls', 'dash']
+                    'player_client': ['android'],  # Android client is most reliable
+                    'player_skip': ['webpage', 'configs']
                 }
             },
-            'age_limit': None,
-            'nocheckcertificate': True,
         }
 
         # Use cookie file if it exists (required for server deployment)
