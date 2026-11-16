@@ -59,7 +59,7 @@ async def setup(bot):
         cookies_path = get_cookies_file()
 
         ydl_opts = {
-            'format': 'bestaudio/best',  # Works with m3u8 formats from iOS client
+            'format': 'bestaudio/best',
             'quiet': True,
             'no_warnings': True,
             'default_search': 'ytsearch',
@@ -67,7 +67,8 @@ async def setup(bot):
             'extract_flat': False,
             'nocheckcertificate': True,
             'geo_bypass': True,
-            # Note: extractor_args removed as they prevent format selection
+            'cachedir': False,
+            'source_address': '0.0.0.0',
         }
 
         # Use cookie file if it exists (required for server deployment)
@@ -105,7 +106,7 @@ async def setup(bot):
 
                 def after_playing(error):
                     if error:
-                        logger.error(f"Error during playback: {error}")
+                        logger.error(f"Error during playback callback: {error}", exc_info=True)
                     else:
                         logger.info("Playback finished successfully")
                     bot.loop.create_task(play_next(ctx, bot))
