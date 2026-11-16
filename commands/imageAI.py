@@ -1,38 +1,31 @@
 import logging
 import discord
 from discord.ext import commands
-from huggingface_hub import InferenceClient
-from PIL import Image
+import aiohttp
+import urllib.parse
 import io
-from config import Config
 
 logger = logging.getLogger(__name__)
 
 async def setup(bot):
-    if not Config.HF_TOKEN:
-        logger.warning("HF_TOKEN not configured, ImageIA command will not work")
-        return
-
-    client = InferenceClient(token=Config.HF_TOKEN)
-
-    @bot.command()
-    async def ImageIA(ctx, *, prompt: str):
+    @bot.command(name="Image", aliases=["ImageIA", "image"])
+    async def image_cmd(ctx, *, prompt: str):
         try:
             await ctx.send(f"🎨 Generando imagen para: `{prompt}`... Esto puede tardar unos segundos.")
 
-            image: Image.Image = client.text_to_image(
-                prompt,
-                model="stabilityai/stable-diffusion-xl-base-1.0",
-                guidance_scale=7.5,
-                num_inference_steps=50
-            )
+            encoded_prompt = urllib.parse.quote(prompt)
+            image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true"
 
-            buffer = io.BytesIO()
-            image.save(buffer, format="PNG")
-            buffer.seek(0)
-
-            await ctx.send(file=discord.File(buffer, filename="generated.png"))
+            async with aiohttp.ClientSession() as session:
+                async with session.get(image_url, timeout=aiohttp.ClientTimeout(total=60)) as response:
+                    if response.status == 200:
+                        image_bytes = await response.read()
+                        buffer = io.BytesIO(image_bytes)
+                        buffer.seek(0)
+                        await ctx.send(file=discord.File(buffer, filename="generated.png"))
+                    else:
+                        await ctx.send(f"❌ Error al generar la imagen (código {response.status}).")
 
         except Exception as e:
-            logger.error(f"Error in ImageIA command: {e}", exc_info=True)
+            logger.error(f"Error in Image command: {e}", exc_info=True)
             await ctx.send(f"❌ Error generando imagen: {str(e)}")

@@ -84,7 +84,7 @@ async def setup(bot):
         embed.add_field(
             name="IA",
             value="`panaIA <prompt>` - Pregunta a Gemini\n"
-                  "`panaImageIA <prompt>` - Genera imagen con IA",
+                  "`panaImage <prompt>` - Genera imagen con IA",
             inline=False
         )
         embed.add_field(
