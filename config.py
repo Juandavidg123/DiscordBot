@@ -6,6 +6,7 @@ load_dotenv()
 class Config:
     DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+    GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.1-pro-preview")
     HF_TOKEN = os.getenv("HF_TOKEN")
 
     COMMAND_PREFIX = "pana"
