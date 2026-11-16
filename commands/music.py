@@ -10,8 +10,13 @@ from config import Config
 logger = logging.getLogger(__name__)
 queueSongs = []
 
-# Explicitly set FFmpeg path (for local development)
-FFMPEG_PATH = "C:/ffmpeg/bin/ffmpeg.exe" if os.path.exists("C:/ffmpeg/bin/ffmpeg.exe") else "ffmpeg"
+# Set FFmpeg path (supports local Windows, local bin folder in Render/Linux, or global PATH)
+if os.path.exists("C:/ffmpeg/bin/ffmpeg.exe"):
+    FFMPEG_PATH = "C:/ffmpeg/bin/ffmpeg.exe"
+elif os.path.exists("./bin/ffmpeg"):
+    FFMPEG_PATH = "./bin/ffmpeg"
+else:
+    FFMPEG_PATH = "ffmpeg"
 
 # Handle cookies from Base64 environment variable (for Render deployment)
 def get_cookies_file():

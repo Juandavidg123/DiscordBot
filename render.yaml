@@ -6,7 +6,15 @@ services:
     plan: free
     buildCommand: |
       pip install -r requirements.txt
-      apt-get update && apt-get install -y ffmpeg
+      mkdir -p bin
+      if [ ! -f bin/ffmpeg ]; then
+        curl -L https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz -o ffmpeg.tar.xz
+        tar -xf ffmpeg.tar.xz
+        mv ffmpeg-*-static/ffmpeg bin/
+        mv ffmpeg-*-static/ffprobe bin/
+        rm -rf ffmpeg.tar.xz ffmpeg-*-static
+        chmod +x bin/ffmpeg bin/ffprobe
+      fi
     startCommand: python bot.py
     envVars:
       - key: DISCORD_TOKEN
