@@ -63,18 +63,28 @@ async def setup(bot):
         # Get cookies file (from Base64 env var or local file)
         cookies_path = get_cookies_file()
 
+        is_url = query.startswith("http://") or query.startswith("https://")
+        search_query = query if is_url else f"scsearch:{query}"
+
         ydl_opts = {
             'format': 'bestaudio/best',
             'quiet': True,
             'no_warnings': True,
-            'default_search': 'ytsearch',
-            'noplaylist': False,
+            'default_search': 'scsearch',
+            'noplaylist': True,
             'extract_flat': False,
             'nocheckcertificate': True,
-            'geo_bypass': True,
             'cachedir': False,
-            'source_address': '0.0.0.0',
         }
+
+        # Fallback options for YouTube if direct YouTube URL was passed
+        if "youtube.com" in query or "youtu.be" in query:
+            ydl_opts['default_search'] = 'ytsearch'
+            ydl_opts['extractor_args'] = {
+                'youtube': {
+                    'player_client': ['mweb', 'web_safari']
+                }
+            }
 
         # Use cookie file if it exists (required for server deployment)
         if cookies_path:
@@ -82,7 +92,17 @@ async def setup(bot):
 
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(query, download=False)
+                try:
+                    info = ydl.extract_info(search_query, download=False)
+                except Exception as first_error:
+                    # Si falla SoundCloud o la búsqueda principal, intentar como búsqueda genérica
+                    if not is_url:
+                        logger.warning(f"Búsqueda primaria falló ({first_error}), reintentando con ytsearch...")
+                        ydl_opts['default_search'] = 'ytsearch'
+                        with yt_dlp.YoutubeDL(ydl_opts) as ydl_fallback:
+                            info = ydl_fallback.extract_info(f"ytsearch:{query}", download=False)
+                    else:
+                        raise first_error
                 if 'entries' in info:  # si fue búsqueda
                     info = info['entries'][0]
 
