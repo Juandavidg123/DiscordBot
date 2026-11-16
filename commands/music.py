@@ -64,50 +64,54 @@ async def setup(bot):
         cookies_path = get_cookies_file()
 
         is_url = query.startswith("http://") or query.startswith("https://")
-        search_query = query if is_url else f"scsearch:{query}"
 
         ydl_opts = {
             'format': 'bestaudio/best',
             'quiet': True,
             'no_warnings': True,
-            'default_search': 'scsearch',
-            'noplaylist': True,
             'extract_flat': False,
             'nocheckcertificate': True,
             'cachedir': False,
+            'ignoreerrors': True,
         }
 
-        # Fallback options for YouTube if direct YouTube URL was passed
-        if "youtube.com" in query or "youtu.be" in query:
-            ydl_opts['default_search'] = 'ytsearch'
-            ydl_opts['extractor_args'] = {
-                'youtube': {
-                    'player_client': ['mweb', 'web_safari']
-                }
-            }
-
-        # Use cookie file if it exists (required for server deployment)
+        # Use cookie file if it exists
         if cookies_path:
             ydl_opts['cookiefile'] = cookies_path
 
         try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                try:
-                    info = ydl.extract_info(search_query, download=False)
-                except Exception as first_error:
-                    # Si falla SoundCloud o la búsqueda principal, intentar como búsqueda genérica
-                    if not is_url:
-                        logger.warning(f"Búsqueda primaria falló ({first_error}), reintentando con ytsearch...")
-                        ydl_opts['default_search'] = 'ytsearch'
-                        with yt_dlp.YoutubeDL(ydl_opts) as ydl_fallback:
-                            info = ydl_fallback.extract_info(f"ytsearch:{query}", download=False)
-                    else:
-                        raise first_error
-                if 'entries' in info:  # si fue búsqueda
-                    info = info['entries'][0]
+            stream_url = None
+            title = None
 
-            stream_url = info['url']
-            title = info.get('title', 'Audio')
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                if is_url:
+                    info = ydl.extract_info(query, download=False)
+                    if info:
+                        stream_url = info.get('url')
+                        title = info.get('title', 'Audio')
+                else:
+                    # 1. Intentar con los primeros 5 resultados de SoundCloud (saltando pistas DRM de pago)
+                    try:
+                        sc_results = ydl.extract_info(f"scsearch5:{query}", download=False)
+                        entries = [e for e in sc_results.get('entries', []) if e and e.get('url')]
+                        if entries:
+                            stream_url = entries[0]['url']
+                            title = entries[0].get('title', 'Audio')
+                    except Exception as sc_err:
+                        logger.warning(f"SoundCloud search error: {sc_err}")
+
+                    # 2. Si no hubo resultados en SoundCloud o falló, intentar ytsearch
+                    if not stream_url:
+                        logger.info("Probando con ytsearch5...")
+                        yt_results = ydl.extract_info(f"ytsearch5:{query}", download=False)
+                        entries = [e for e in yt_results.get('entries', []) if e and e.get('url')]
+                        if entries:
+                            stream_url = entries[0]['url']
+                            title = entries[0].get('title', 'Audio')
+
+            if not stream_url:
+                await ctx.send("❌ No se pudo encontrar una versión reproducible sin DRM. Prueba con otro término de búsqueda.")
+                return
 
             # Verifica si el usuario está en canal de voz
             if ctx.author.voice is None:
