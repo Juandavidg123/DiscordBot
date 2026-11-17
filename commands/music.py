@@ -82,6 +82,37 @@ async def setup(bot):
         def extract_audio():
             stream_url = None
             title = None
+
+            # 1. Intentar primero con Piped / Invidious API (evita completamente bloqueos de IP de YouTube/Google)
+            if not is_url:
+                try:
+                    import urllib.request
+                    import json
+                    import urllib.parse
+                    encoded_q = urllib.parse.quote(query)
+                    piped_url = f"https://api.piped.private.coffee/search?q={encoded_q}&filter=videos"
+                    req = urllib.request.Request(piped_url, headers={'User-Agent': 'Mozilla/5.0'})
+                    with urllib.request.urlopen(req, timeout=5) as resp:
+                        if resp.status == 200:
+                            data = json.loads(resp.read().decode('utf-8'))
+                            items = data.get('items', [])
+                            for item in items:
+                                v_url = item.get('url', '')
+                                if 'v=' in v_url:
+                                    video_id = v_url.split('v=')[-1]
+                                    stream_req = urllib.request.Request(f"https://api.piped.private.coffee/streams/{video_id}", headers={'User-Agent': 'Mozilla/5.0'})
+                                    with urllib.request.urlopen(stream_req, timeout=5) as s_resp:
+                                        if s_resp.status == 200:
+                                            s_data = json.loads(s_resp.read().decode('utf-8'))
+                                            audio_streams = s_data.get('audioStreams', [])
+                                            if audio_streams:
+                                                stream_url = audio_streams[0]['url']
+                                                title = s_data.get('title', item.get('title', 'Audio'))
+                                                logger.info(f"Obtenido stream exitosamente vía Piped: {title}")
+                                                return stream_url, title
+                except Exception as p_err:
+                    logger.warning(f"Piped API intento fallido o timeout: {p_err}")
+
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 if is_url:
                     info = ydl.extract_info(query, download=False)
@@ -89,7 +120,7 @@ async def setup(bot):
                         stream_url = info.get('url')
                         title = info.get('title', 'Audio')
                 else:
-                    # 1. Probar SoundCloud (generalmente no bloquea IPs de servidor)
+                    # 2. Probar SoundCloud (generalmente no bloquea IPs de servidor)
                     try:
                         sc_results = ydl.extract_info(f"scsearch5:{query}", download=False)
                         entries = [e for e in sc_results.get('entries', []) if e and e.get('url')]
@@ -99,7 +130,7 @@ async def setup(bot):
                     except Exception as sc_err:
                         logger.warning(f"SoundCloud error: {sc_err}")
 
-                    # 2. Si no se encontró en SoundCloud, probar YouTube
+                    # 3. Si no se encontró en SoundCloud, probar YouTube
                     if not stream_url:
                         logger.info("Probando con ytsearch5...")
                         yt_results = ydl.extract_info(f"ytsearch5:{query}", download=False)
