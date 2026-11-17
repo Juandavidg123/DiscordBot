@@ -79,10 +79,9 @@ async def setup(bot):
         if cookies_path:
             ydl_opts['cookiefile'] = cookies_path
 
-        try:
+        def extract_audio():
             stream_url = None
             title = None
-
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 if is_url:
                     info = ydl.extract_info(query, download=False)
@@ -90,7 +89,7 @@ async def setup(bot):
                         stream_url = info.get('url')
                         title = info.get('title', 'Audio')
                 else:
-                    # 1. Intentar con los primeros 5 resultados de SoundCloud (saltando pistas DRM de pago)
+                    # 1. Probar SoundCloud (generalmente no bloquea IPs de servidor)
                     try:
                         sc_results = ydl.extract_info(f"scsearch5:{query}", download=False)
                         entries = [e for e in sc_results.get('entries', []) if e and e.get('url')]
@@ -98,9 +97,9 @@ async def setup(bot):
                             stream_url = entries[0]['url']
                             title = entries[0].get('title', 'Audio')
                     except Exception as sc_err:
-                        logger.warning(f"SoundCloud search error: {sc_err}")
+                        logger.warning(f"SoundCloud error: {sc_err}")
 
-                    # 2. Si no hubo resultados en SoundCloud o falló, intentar ytsearch
+                    # 2. Si no se encontró en SoundCloud, probar YouTube
                     if not stream_url:
                         logger.info("Probando con ytsearch5...")
                         yt_results = ydl.extract_info(f"ytsearch5:{query}", download=False)
@@ -108,6 +107,12 @@ async def setup(bot):
                         if entries:
                             stream_url = entries[0]['url']
                             title = entries[0].get('title', 'Audio')
+            return stream_url, title
+
+        try:
+            # Ejecutar yt-dlp en un hilo en segundo plano para no bloquear el heartbeat de Discord
+            import asyncio
+            stream_url, title = await asyncio.to_thread(extract_audio)
 
             if not stream_url:
                 await ctx.send("❌ No se pudo encontrar una versión reproducible sin DRM. Prueba con otro término de búsqueda.")

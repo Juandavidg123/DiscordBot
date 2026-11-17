@@ -15,7 +15,13 @@ services:
         rm -rf ffmpeg.tar.xz ffmpeg-*-static
         chmod +x bin/ffmpeg bin/ffprobe
       fi
-    startCommand: python bot.py
+      if [ ! -f bin/deno ]; then
+        curl -fsSL https://deno.land/install.sh | DENO_INSTALL=./deno-install sh
+        mv ./deno-install/bin/deno bin/
+        rm -rf ./deno-install
+        chmod +x bin/deno
+      fi
+    startCommand: PATH="$(pwd)/bin:$PATH" python bot.py
     envVars:
       - key: DISCORD_TOKEN
         sync: false
