@@ -75,6 +75,10 @@ async def setup(bot):
             'ignoreerrors': True,
         }
 
+        proxy_url = os.getenv("PROXY_URL")
+        if proxy_url:
+            ydl_opts['proxy'] = proxy_url
+
         # Use cookie file if it exists
         if cookies_path:
             ydl_opts['cookiefile'] = cookies_path
@@ -83,70 +87,6 @@ async def setup(bot):
             stream_url = None
             title = None
 
-            # 1. Intentar con múltiples instancias públicas de Piped e Invidious (evita bloqueos de IP de Render)
-            if not is_url:
-                import urllib.request
-                import json
-                import urllib.parse
-                encoded_q = urllib.parse.quote(query)
-                
-                piped_instances = [
-                    "https://api.piped.private.coffee",
-                    "https://pipedapi.kavin.rocks",
-                    "https://pipedapi.adminforge.de",
-                    "https://pipedapi.leptons.xyz",
-                ]
-                for instance in piped_instances:
-                    try:
-                        req = urllib.request.Request(f"{instance}/search?q={encoded_q}&filter=videos", headers={'User-Agent': 'Mozilla/5.0'})
-                        with urllib.request.urlopen(req, timeout=4) as resp:
-                            if resp.status == 200:
-                                data = json.loads(resp.read().decode('utf-8'))
-                                items = data.get('items', [])
-                                for item in items[:2]:
-                                    v_url = item.get('url', '')
-                                    if 'v=' in v_url:
-                                        video_id = v_url.split('v=')[-1]
-                                        s_req = urllib.request.Request(f"{instance}/streams/{video_id}", headers={'User-Agent': 'Mozilla/5.0'})
-                                        with urllib.request.urlopen(s_req, timeout=4) as s_resp:
-                                            if s_resp.status == 200:
-                                                s_data = json.loads(s_resp.read().decode('utf-8'))
-                                                audio_streams = s_data.get('audioStreams', [])
-                                                if audio_streams:
-                                                    stream_url = audio_streams[0]['url']
-                                                    title = s_data.get('title', item.get('title', 'Audio'))
-                                                    logger.info(f"Obtenido stream vía Piped ({instance}): {title}")
-                                                    return stream_url, title
-                    except Exception as p_err:
-                        logger.warning(f"Piped ({instance}) falló: {p_err}")
-
-                invidious_instances = [
-                    "https://inv.nadeko.net",
-                    "https://invidious.nerdvpn.de",
-                    "https://yewtu.be",
-                ]
-                for inv in invidious_instances:
-                    try:
-                        req = urllib.request.Request(f"{inv}/api/v1/search?q={encoded_q}&type=video", headers={'User-Agent': 'Mozilla/5.0'})
-                        with urllib.request.urlopen(req, timeout=4) as resp:
-                            if resp.status == 200:
-                                results = json.loads(resp.read().decode('utf-8'))
-                                if results and isinstance(results, list):
-                                    video_id = results[0].get('videoId')
-                                    if video_id:
-                                        v_req = urllib.request.Request(f"{inv}/api/v1/videos/{video_id}", headers={'User-Agent': 'Mozilla/5.0'})
-                                        with urllib.request.urlopen(v_req, timeout=4) as v_resp:
-                                            if v_resp.status == 200:
-                                                v_data = json.loads(v_resp.read().decode('utf-8'))
-                                                audio_formats = [f for f in v_data.get('adaptiveFormats', []) if 'audio' in f.get('type', '')]
-                                                if audio_formats:
-                                                    stream_url = audio_formats[0]['url']
-                                                    title = v_data.get('title', results[0].get('title', 'Audio'))
-                                                    logger.info(f"Obtenido stream vía Invidious ({inv}): {title}")
-                                                    return stream_url, title
-                    except Exception as inv_err:
-                        logger.warning(f"Invidious ({inv}) falló: {inv_err}")
-
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 if is_url:
                     info = ydl.extract_info(query, download=False)
@@ -154,7 +94,7 @@ async def setup(bot):
                         stream_url = info.get('url')
                         title = info.get('title', 'Audio')
                 else:
-                    # 2. Probar SoundCloud (generalmente no bloquea IPs de servidor)
+                    # 1. Probar SoundCloud (generalmente no bloquea IPs de servidor)
                     try:
                         sc_results = ydl.extract_info(f"scsearch5:{query}", download=False)
                         entries = [e for e in sc_results.get('entries', []) if e and e.get('url')]
@@ -164,7 +104,7 @@ async def setup(bot):
                     except Exception as sc_err:
                         logger.warning(f"SoundCloud error: {sc_err}")
 
-                    # 3. Si no se encontró en SoundCloud, probar YouTube
+                    # 2. Si no se encontró en SoundCloud, probar YouTube
                     if not stream_url:
                         logger.info("Probando con ytsearch5...")
                         yt_results = ydl.extract_info(f"ytsearch5:{query}", download=False)
