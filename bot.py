@@ -4,6 +4,7 @@ import discord
 from discord.ext import commands
 import asyncio
 import webserver
+import wavelink
 from config import Config
 
 logging.basicConfig(
@@ -19,7 +20,33 @@ logger = logging.getLogger(__name__)
 intents = discord.Intents.default()
 intents.message_content = True
 intents.voice_states = True
-bot = commands.Bot(command_prefix=Config.COMMAND_PREFIX, intents=intents, help_command=None)
+
+class PanalandBot(commands.Bot):
+    async def setup_hook(self):
+        try:
+            node = wavelink.Node(
+                identifier="MainLavalinkNode",
+                uri=Config.LAVALINK_URI,
+                password=Config.LAVALINK_PASSWORD,
+                retries=5
+            )
+            await wavelink.Pool.connect(nodes=[node], client=self)
+            logger.info("📡 Conexión con el pool de Wavelink/Lavalink iniciada.")
+        except Exception as e:
+            logger.error(f"⚠️ Error al conectar con nodo Lavalink: {e}", exc_info=True)
+
+bot = PanalandBot(command_prefix=Config.COMMAND_PREFIX, intents=intents, help_command=None)
+
+@bot.event
+async def on_wavelink_node_ready(payload: wavelink.NodeReadyEventPayload):
+    logger.info(f"✅ Lavalink Node conectado y listo: {payload.node.identifier}")
+
+@bot.event
+async def on_wavelink_track_end(payload: wavelink.TrackEndEventPayload):
+    player = payload.player
+    if player and not player.queue.is_empty:
+        next_track = await player.queue.get_wait()
+        await player.play(next_track)
 
 @bot.event
 async def on_ready():
