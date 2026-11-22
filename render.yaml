@@ -31,5 +31,9 @@ services:
         sync: false
       - key: COOKIES_FILE
         value: /etc/secrets/cookiesYT.txt
+      - key: LAVALINK_URI
+        value: http://lavalink.jirayu.net:13592
+      - key: LAVALINK_PASSWORD
+        value: youshallnotpass
       - key: PYTHON_VERSION
         value: 3.11.0
