@@ -22,18 +22,3 @@ services:
         chmod +x bin/deno
       fi
     startCommand: PATH="$(pwd)/bin:$PATH" python bot.py
-    envVars:
-      - key: DISCORD_TOKEN
-        sync: false
-      - key: GEMINI_API_KEY
-        sync: false
-      - key: HF_TOKEN
-        sync: false
-      - key: COOKIES_FILE
-        value: /etc/secrets/cookiesYT.txt
-      - key: LAVALINK_URI
-        value: http://lavalink.jirayu.net:13592
-      - key: LAVALINK_PASSWORD
-        value: youshallnotpass
-      - key: PYTHON_VERSION
-        value: 3.11.0
