@@ -17,8 +17,8 @@ class Config:
     COOKIES_FILE = os.getenv("COOKIES_FILE", "cookiesYT.txt")
 
     # Lavalink configuration
-    LAVALINK_URI = os.getenv("LAVALINK_URI", "https://lavalink.ajieblogs.eu.org")
-    LAVALINK_PASSWORD = os.getenv("LAVALINK_PASSWORD", "https://dsc.gg/ajidevserver")
+    LAVALINK_URI = os.getenv("LAVALINK_URI", "http://lavalink.jirayu.net:13592")
+    LAVALINK_PASSWORD = os.getenv("LAVALINK_PASSWORD", "youshallnotpass")
 
     MAX_MESSAGE_LENGTH = 2000
     MAX_PING_COUNT = 10
