@@ -22,4 +22,3 @@ class Config:
 
     MAX_MESSAGE_LENGTH = 2000
     MAX_PING_COUNT = 10
-    MAX_PURGE_COUNT = 100
