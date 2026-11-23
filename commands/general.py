@@ -38,6 +38,7 @@ async def setup(bot):
             await ctx.send(f"❌ Error: {str(e)}")
 
     @bot.command()
+    @commands.has_permissions(administrator=True)
     async def Purge(ctx, cantidad: int):
         if cantidad < 1 or cantidad > Config.MAX_PURGE_COUNT:
             await ctx.send(f"⚠️ Debes especificar un número entre 1 y {Config.MAX_PURGE_COUNT}.")
@@ -50,6 +51,11 @@ async def setup(bot):
         except Exception as e:
             logger.error(f"Error in Purge command: {e}", exc_info=True)
             await ctx.send(f"❌ Error: {str(e)}")
+
+    @Purge.error
+    async def purge_error(ctx, error):
+        if isinstance(error, commands.MissingPermissions):
+            await ctx.send("⛔ Solo los administradores pueden usar este comando.")
 
     @bot.command()
     async def Avatar(ctx, user: discord.Member = None):

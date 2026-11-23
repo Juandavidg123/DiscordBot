@@ -61,6 +61,8 @@ async def on_command_error(ctx, error):
         await ctx.send("❌ Comando no encontrado. Usa `panaHelp` para ver comandos disponibles.")
     elif isinstance(error, commands.MissingRequiredArgument):
         await ctx.send(f"❌ Falta un argumento: {error.param.name}")
+    elif isinstance(error, commands.MissingPermissions):
+        await ctx.send("⛔ No tienes los permisos necesarios para usar este comando.")
     elif isinstance(error, commands.BadArgument):
         await ctx.send(f"❌ Argumento inválido: {str(error)}")
     else:
