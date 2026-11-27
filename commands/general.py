@@ -83,4 +83,9 @@ async def setup(bot):
                   "`panaLeave` - Desconecta el bot",
             inline=False
         )
+        embed.add_field(
+            name="Twitch",
+            value="`panaTwitch [canal]` - Consulta el estado del stream en Twitch",
+            inline=False
+        )
         await ctx.send(embed=embed)
